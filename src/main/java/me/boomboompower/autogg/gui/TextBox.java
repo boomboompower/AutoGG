@@ -305,7 +305,7 @@ public class TextBox extends Gui {
             return true;
         } else if (GuiScreen.isKeyComboCtrlV(keyCode)) {
             if (this.isEnabled) {
-                this.writeText(GuiScreen.getClipboardString());
+                this.writeText(getNumbers(GuiScreen.getClipboardString()));
             }
 
             return true;
