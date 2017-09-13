@@ -38,7 +38,6 @@ public class AutoGGEvents {
             "Winner - ", "1st Place - ", "1st Killer - ", "Winner: ", "WINNER!",
             "Winning Team - ", "1st - ", "Winners: ", "Winning Team: ", " won the game!", "1st Place: ");
 
-    private boolean running = false;
     private int tick = -1;
 
     @SubscribeEvent(priority = EventPriority.LOW)
@@ -51,7 +50,6 @@ public class AutoGGEvents {
             }
 
             if (isEndOfGame(message)) {
-                this.running = true;
                 this.tick = AutoGG.getInstance().getTickDelay();
             }
         } catch (Exception ex) {
@@ -61,9 +59,8 @@ public class AutoGGEvents {
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onGameTick(TickEvent.ClientTickEvent event) {
         if (this.tick == 0) {
-            if (AutoGG.getInstance().isOn() && this.running)  {
+            if (AutoGG.getInstance().isOn())  {
                 Minecraft.getMinecraft().thePlayer.sendChatMessage("/ac gg");
-                this.running = false;
             }
             this.tick = -1;
         } else {
@@ -74,6 +71,6 @@ public class AutoGGEvents {
     }
 
     private boolean isEndOfGame(String message) {
-        return this.endingStrings.stream().anyMatch(a -> ChatColor.stripColor(message).contains(a) && !message.startsWith(" "));
+        return this.endingStrings.stream().anyMatch(a -> ChatColor.stripColor(message).contains(a) && message.startsWith(" "));
     }
 }
