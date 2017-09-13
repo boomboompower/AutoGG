@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2016 boomboompower
+ *     Copyright (C) 2017 boomboompower
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -19,13 +19,16 @@ package me.boomboompower.autogg.gui;
 
 import me.boomboompower.autogg.AutoGG;
 
-import me.boomboompower.autogg.events.AutoGGEvents;
-import me.boomboompower.autogg.utils.GlobalUtils;
+import me.boomboompower.autogg.gui.modern.ModernButton;
+import me.boomboompower.autogg.gui.modern.ModernTextBox;
+import me.boomboompower.autogg.utils.ChatColor;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.ChatComponentText;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -47,7 +50,7 @@ public class SettingsGui extends GuiScreen {
     private GuiButton set;
     private GuiButton reset;
 
-    private TextBox text;
+    private ModernTextBox text;
     private String input = "";
 
     public SettingsGui() {
@@ -62,13 +65,13 @@ public class SettingsGui extends GuiScreen {
     public void initGui() {
         Keyboard.enableRepeatEvents(true);
 
-        text = new TextBox(0, this.fontRendererObj, this.width / 2 - 75, this.height / 2 - 27, 150, 20);
+        this.text = new ModernTextBox(0, this.width / 2 - 100, this.height / 2 - 27, 200, 20, true);
 
-        this.buttonList.add(new GuiButton(1, this.width / 2 - 100, this.height / 2 + 2, 200, 20, "AutoGG: " + getAutoGG()));
-        this.buttonList.add(this.set = new GuiButton(2, this.width / 2 - 100, this.height / 2 + 26, 200, 20, "Set Delay"));
-        this.buttonList.add(this.reset = new GuiButton(3, this.width / 2 - 100, this.height / 2 + 50, 200, 20, "Reset Delay"));
+        this.buttonList.add(new ModernButton(1, this.width / 2 - 100, this.height / 2 + 2, 200, 20, "AutoGG: " + getAutoGG()));
+        this.buttonList.add(this.set = new ModernButton(2, this.width / 2 - 100, this.height / 2 + 26, 200, 20, "Set Delay"));
+        this.buttonList.add(this.reset = new ModernButton(3, this.width / 2 - 100, this.height / 2 + 50, 200, 20, "Reset Delay"));
 
-        text.setText(input);
+        this.text.setText(this.input);
     }
 
     @Override
@@ -76,10 +79,11 @@ public class SettingsGui extends GuiScreen {
         drawDefaultBackground();
 
         drawTitle("AutoGG v" + AutoGG.VERSION);
-        drawInfo();
+        drawCenteredString(this.mc.fontRendererObj, String.format("Delay is currently %s ticks", ChatColor.GOLD.toString() + AutoGG.getInstance().getTickDelay() + ChatColor.WHITE), this.width / 2, this.height / 2 - 58, Color.WHITE.getRGB());
+        drawCenteredString(this.mc.fontRendererObj, String.format("Which is about %s second%s" , (ChatColor.GOLD.toString() + (double) AutoGG.getInstance().getTickDelay() / 20 + ChatColor.WHITE), AutoGG.getInstance().getTickDelay() == 20D ? "" : "s"), this.width / 2, this.height /2 - 46, Color.WHITE.getRGB());
 
-        this.set.enabled = AutoGG.isOn;
-        this.reset.enabled = AutoGG.isOn;
+        ((ModernButton) this.set).enabled = AutoGG.getInstance().isOn();
+        ((ModernButton) this.reset).enabled = AutoGG.getInstance().isOn();
 
         text.drawTextBox();
         super.drawScreen(x, y, ticks);
@@ -88,9 +92,9 @@ public class SettingsGui extends GuiScreen {
     @Override
     protected void keyTyped(char c, int key)  {
         if (key == 1) {
-            mc.displayGuiScreen(null);
+            this.mc.displayGuiScreen(null);
         } else {
-            text.textboxKeyTyped(c, key);
+            this.text.textboxKeyTyped(c, key);
         }
     }
 
@@ -98,35 +102,35 @@ public class SettingsGui extends GuiScreen {
     protected void mouseClicked(int x, int y, int btn) {
         try {
             super.mouseClicked(x, y, btn);
-            text.mouseClicked(x, y, btn);
+            this.text.mouseClicked(x, y, btn);
         } catch (Exception ex) {}
     }
 
     @Override
     public void updateScreen() {
         super.updateScreen();
-        text.updateCursorCounter();
+        this.text.updateCursorCounter();
     }
 
     @Override
     protected void actionPerformed(GuiButton button) {
-        switch (button.id) {
-            case 0:
-                // Dont need to do anything
-                break;
+        if (!(button instanceof ModernButton)) return;
+
+        switch (((ModernButton) button).id) {
             case 1:
-                AutoGG.isOn = !AutoGG.isOn;
-                button.displayString = "AutoGG: " + getAutoGG();
-                text.pressToggle();
+                AutoGG.getInstance().setOn(!AutoGG.getInstance().isOn());
+                ((ModernButton) button).displayString = "AutoGG: " + getAutoGG();
+                this.text.pressToggle();
                 break;
             case 2:
-                if (!text.getText().isEmpty()) {
+                if (!this.text.getText().isEmpty()) {
                     try {
-                        if (Integer.valueOf(text.getText()) > 0) {
-                            AutoGGEvents.delay = Integer.valueOf(text.getText());
-                            sendChatMessage(String.format("Delay has been set to %s ticks!", EnumChatFormatting.RED + text.getText() + EnumChatFormatting.GRAY));
+                        int ticks = Integer.valueOf(this.text.getText());
+                        if (ticks >= 0 && ticks <= 100) {
+                            AutoGG.getInstance().setTickDelay(ticks);
+                            sendChatMessage(String.format("Delay has been set to %s ticks!", ChatColor.RED + this.text.getText() + ChatColor.GRAY));
                         } else {
-                            sendChatMessage("Tick delay must be over 0.");
+                                sendChatMessage("Tick delay must be over 0 and under 100.");
                         }
                     } catch (Exception ex) {
                         sendChatMessage("Please only use numbers!");
@@ -146,7 +150,7 @@ public class SettingsGui extends GuiScreen {
     @Override
     public void onGuiClosed() {
         Keyboard.enableRepeatEvents(false);
-        AutoGG.fileUtils.saveConfig();
+        AutoGG.getInstance().getFileUtils().saveConfig();
     }
 
     @Override
@@ -156,7 +160,7 @@ public class SettingsGui extends GuiScreen {
 
     @Override
     public void sendChatMessage(String message) {
-        GlobalUtils.sendMessage(message);
+        Minecraft.getMinecraft().thePlayer.addChatComponentMessage(new ChatComponentText(ChatColor.GOLD + "AutoGG" + ChatColor.AQUA + " > " + ChatColor.GRAY + ChatColor.translateAlternateColorCodes(message)));
     }
 
     public void display() {
@@ -170,21 +174,28 @@ public class SettingsGui extends GuiScreen {
     }
 
     private void reset() {
-        AutoGGEvents.delay = 20;
-        sendChatMessage("Delay has been reset!");
+        AutoGG.getInstance().setTickDelay(20);
+        sendChatMessage("Tick delay has been reset!");
     }
 
     private String getAutoGG() {
-        return AutoGG.isOn ? EnumChatFormatting.GREEN + "Enabled" : EnumChatFormatting.RED + "Disabled";
-    }
-
-    private void drawInfo() {
-        drawCenteredString(mc.fontRendererObj, String.format("Delay is currently %s ticks", EnumChatFormatting.GOLD.toString() + AutoGGEvents.delay + EnumChatFormatting.WHITE), this.width / 2, this.height / 2 - 58, Color.WHITE.getRGB());
-        drawCenteredString(mc.fontRendererObj, String.format("Which is about %s second%s" , (EnumChatFormatting.GOLD.toString() + (double) AutoGGEvents.delay / 20 + EnumChatFormatting.WHITE), AutoGGEvents.delay == 20D ? "" : "s"), this.width / 2, this.height /2 - 46, Color.WHITE.getRGB());
+        return AutoGG.getInstance().isOn() ? ChatColor.GREEN + "Enabled" : ChatColor.RED + "Disabled";
     }
 
     private void drawTitle(String text) {
-        drawCenteredString(mc.fontRendererObj, text, this.width / 2, this.height / 2 - 80, Color.WHITE.getRGB());
-        drawHorizontalLine(this.width / 2 - mc.fontRendererObj.getStringWidth(text) / 2 - 5, this.width / 2 + mc.fontRendererObj.getStringWidth(text) / 2 + 5, this.height / 2 - 70, Color.WHITE.getRGB());
+        drawCenteredString(this.mc.fontRendererObj, text, this.width / 2, this.height / 2 - 80, Color.WHITE.getRGB());
+        drawHorizontalLine(this.width / 2 - this.mc.fontRendererObj.getStringWidth(text) / 2 - 5, this.width / 2 + this.mc.fontRendererObj.getStringWidth(text) / 2 + 5, this.height / 2 - 70, Color.WHITE.getRGB());
+    }
+
+    @Override
+    public void drawCenteredString(FontRenderer fontRenderer, String text, int x, int y, int color) {
+        fontRenderer.drawString(text, (float)(x - fontRenderer.getStringWidth(text) / 2), (float) y, color, false);
+    }
+
+    @Override
+    public void drawDefaultBackground() {
+        long lastPress = System.currentTimeMillis();
+        int color = Math.min(255, (int) (2L * (System.currentTimeMillis() - lastPress)));
+        Gui.drawRect(0, 0, width, height, 2013265920 + (color << 16) + (color << 8) + color);
     }
 }

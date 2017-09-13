@@ -1,24 +1,7 @@
-/*
- *     Copyright (C) 2016 boomboompower
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-package me.boomboompower.autogg.gui;
+package me.boomboompower.autogg.gui.modern;
 
 import me.boomboompower.autogg.AutoGG;
-
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiPageButtonList;
@@ -35,7 +18,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.function.Predicate;
 
-public class TextBox extends Gui {
+public class ModernTextBox extends Gui {
+
+    private String alertMessage = "";
 
     private final int id;
     private final FontRenderer fontRendererInstance;
@@ -46,13 +31,13 @@ public class TextBox extends Gui {
     public int height;
     /** Has the current text being edited on the textbox. */
     private String text = "";
-    private int maxStringLength = 5;
+    private int maxStringLength = 16;
     private int cursorCounter;
     private boolean enableBackgroundDrawing = true;
     /** if true the textbox can lose focus by clicking elsewhere on the screen */
     private boolean canLoseFocus = true;
     /** If this value is true along with isEnabled, keyTyped will process the keys. */
-    private boolean isFocused = true;
+    private boolean isFocused = false;
     /** If this value is true along with isFocused, keyTyped will process the keys. */
     private boolean isEnabled = true;
     /** The current character index that should be used as start of the rendered text. */
@@ -67,15 +52,28 @@ public class TextBox extends Gui {
     private GuiPageButtonList.GuiResponder guiResponder;
     private Predicate<String> validator = s -> true;
 
+    private boolean onlyAllowNumbers = false;
+    private String noTextMessage = "Write here!";
+
     private boolean running = false;
 
-    public TextBox(int componentId, FontRenderer fontrendererObj, int x, int y, int par5Width, int par6Height) {
+    public ModernTextBox(int componentId, int x, int y, int width, int height) {
+        this(componentId, x, y, width, height, false);
+    }
+
+    public ModernTextBox(int componentId, int x, int y, int width, int height, boolean onlyAllowNumbers) {
+        this(componentId, x, y, width, height, "Write Here!", onlyAllowNumbers);
+    }
+
+    public ModernTextBox(int componentId, int x, int y, int width, int height, String noTextMessage, boolean onlyAllowNumbers) {
         this.id = componentId;
-        this.fontRendererInstance = fontrendererObj;
+        this.fontRendererInstance = Minecraft.getMinecraft().fontRendererObj;
         this.xPosition = x;
         this.yPosition = y;
-        this.width = par5Width;
-        this.height = par6Height;
+        this.width = width;
+        this.height = height;
+        this.noTextMessage = noTextMessage;
+        this.onlyAllowNumbers = onlyAllowNumbers;
     }
 
     public void setGuiResponder(GuiPageButtonList.GuiResponder guiResponder) {
@@ -93,11 +91,11 @@ public class TextBox extends Gui {
      * Sets the text of the textbox
      */
     public void setText(String text) {
-        if (this.validator.test(getNumbers(text))) {
-            if (getNumbers(text).length() > this.maxStringLength) {
-                this.text = getNumbers(text).substring(0, this.maxStringLength);
+        if (this.validator.test(format(text))) {
+            if (format(text).length() > this.maxStringLength) {
+                this.text = format(text).substring(0, this.maxStringLength);
             } else {
-                this.text = getNumbers(text);
+                this.text = format(text);
             }
             this.setCursorPositionEnd();
         }
@@ -305,9 +303,8 @@ public class TextBox extends Gui {
             return true;
         } else if (GuiScreen.isKeyComboCtrlV(keyCode)) {
             if (this.isEnabled) {
-                this.writeText(getNumbers(GuiScreen.getClipboardString()));
+                this.writeText(format(GuiScreen.getClipboardString()));
             }
-
             return true;
         } else if (GuiScreen.isKeyComboCtrlX(keyCode)) {
             GuiScreen.setClipboardString(this.getSelectedText());
@@ -357,8 +354,7 @@ public class TextBox extends Gui {
                     if (GuiScreen.isShiftKeyDown()) {
                         if (GuiScreen.isCtrlKeyDown()) {
                             this.setSelectionPos(this.getNthWordFromPos(1, this.getSelectionEnd()));
-                        }
-                        else {
+                        } else {
                             this.setSelectionPos(this.getSelectionEnd() + 1);
                         }
                     } else if (GuiScreen.isCtrlKeyDown()) {
@@ -370,11 +366,9 @@ public class TextBox extends Gui {
                 case 207:
                     if (GuiScreen.isShiftKeyDown()) {
                         this.setSelectionPos(this.text.length());
-                    }
-                    else {
+                    } else {
                         this.setCursorPositionEnd();
                     }
-
                     return true;
                 case 211:
                     if (GuiScreen.isCtrlKeyDown()) {
@@ -387,32 +381,18 @@ public class TextBox extends Gui {
                     return true;
                 default:
                     if (ChatAllowedCharacters.isAllowedCharacter(c)) {
-                        if (Character.isDigit(c)) {
+                        if (this.onlyAllowNumbers) {
+                            if (Character.isDigit(c)) {
+                                if (this.isEnabled) {
+                                    this.writeText(Character.toString(c));
+                                }
+                            } else if (!this.running) {
+                                alert("Only numbers can be used!", 1250);
+                            }
+                        } else {
                             if (this.isEnabled) {
                                 this.writeText(Character.toString(c));
                             }
-                        } else if (!running) {
-                            running = true;
-
-                            boolean focus = this.isFocused;
-                            int color = this.enabledColor;
-                            String og = this.text;
-
-                            setFocused(false);
-                            setTextColor(Color.RED.getRGB());
-                            this.text = "Only numbers can be used!"; // Overriding our character limit!
-
-                            new Timer().schedule(new TimerTask() {
-                                @Override
-                                public void run() {
-                                    if (AutoGG.isOn) setFocused(focus);
-
-                                    setTextColor(color);
-                                    setText(og);
-
-                                    running = false;
-                                }
-                            }, 750);
                         }
                         return true;
                     } else {
@@ -450,11 +430,14 @@ public class TextBox extends Gui {
     public void drawTextBox() {
         if (this.getVisible()) {
             if (this.getEnableBackgroundDrawing()) {
-                drawRect(this.xPosition -1, this.yPosition -1, this.xPosition + this.width + 1, this.yPosition + this.height + 1, -6250336);
-                drawRect(this.xPosition, this.yPosition, this.xPosition + this.width, this.yPosition + this.height, -16777216);
+                if (this.isEnabled) {
+                    drawRect(this.xPosition, this.yPosition, this.xPosition + width, this.yPosition + height, new Color(0, 148, 255, 75).getRGB());
+                } else {
+                    drawRect(this.xPosition, this.yPosition, this.xPosition + width, this.yPosition + height,  new Color(0, 125, 215, 75).getRGB());
+                }
             }
 
-            int i = this.isEnabled ? this.enabledColor: this.disabledColor;
+            int i = this.isEnabled ? this.enabledColor : this.disabledColor;
             int j = this.cursorPosition - this.lineScrollOffset;
             int k = this.selectionEnd - this.lineScrollOffset;
             String s = this.fontRendererInstance.trimStringToWidth(this.text.substring(this.lineScrollOffset), this.getWidth());
@@ -468,9 +451,19 @@ public class TextBox extends Gui {
                 k = s.length();
             }
 
+            if (!alertMessage.isEmpty()) {
+                this.fontRendererInstance.drawString(alertMessage, ((this.xPosition + this.width / 2) - fontRendererInstance.getStringWidth(alertMessage) / 2), this.yPosition + this.height / 2 - 4, enabledColor, false);
+                return;
+            }
+
+            if (s.isEmpty() && !isFocused && isEnabled) {
+                this.fontRendererInstance.drawString(noTextMessage, ((this.xPosition + this.width / 2) - fontRendererInstance.getStringWidth(noTextMessage) / 2), this.yPosition + this.height / 2 - 4, i, false);
+                return;
+            }
+
             if (s.length() > 0) {
                 String s1 = flag ? s.substring(0, j) : s;
-                j1 = this.fontRendererInstance.drawStringWithShadow(s1, (float) l, (float) i1, i);
+                j1 = this.fontRendererInstance.drawString(s1, (float) l, (float) i1, i, false);
             }
 
             boolean flag2 = this.cursorPosition < this.text.length() || this.text.length() >= this.getMaxStringLength();
@@ -478,13 +471,12 @@ public class TextBox extends Gui {
 
             if (!flag) {
                 k1 = j > 0 ? l + this.width: l;
-            }
-            else if (flag2) {
+            } else if (flag2) {
                 k1 = j1 -1; --j1;
             }
 
             if (s.length() > 0 && flag && j < s.length()) {
-                this.fontRendererInstance.drawStringWithShadow(s.substring(j), (float) j1, (float) i1, i);
+                this.fontRendererInstance.drawString(s.substring(j), (float) j1, (float) i1, i, false);
             }
 
             if (flag1) {
@@ -492,7 +484,7 @@ public class TextBox extends Gui {
                     Gui.drawRect(k1, i1 -1, k1 + 1, i1 + 1 + this.fontRendererInstance.FONT_HEIGHT, -3092272);
                 }
                 else {
-                    this.fontRendererInstance.drawStringWithShadow("_", (float) k1, (float) i1, i);
+                    this.fontRendererInstance.drawString("_", (float) k1, (float) i1, i, false);
                 }
             }
 
@@ -575,8 +567,8 @@ public class TextBox extends Gui {
     /**
      * enable drawing background and outline
      */
-    public void setEnableBackgroundDrawing(boolean p_146185_1_) {
-        this.enableBackgroundDrawing = p_146185_1_;
+    public void setEnableBackgroundDrawing(boolean enableBackgroundDrawing) {
+        this.enableBackgroundDrawing = enableBackgroundDrawing;
     }
 
     /**
@@ -687,10 +679,37 @@ public class TextBox extends Gui {
         this.visible = isVisible;
     }
 
-    private String getNumbers(String input) {
+    public boolean isRunning() {
+        return this.running;
+    }
+
+    public void alert(String message, int time) {
+        if (message.isEmpty()) return;
+
+        running = true;
+        alertMessage = message;
+
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                alertMessage = "";
+                running = false;
+            }
+        }, time);
+    }
+
+    public void setOnlyAllowNumbers(boolean onlyAllowNumbers) {
+        this.onlyAllowNumbers = onlyAllowNumbers;
+    }
+
+    public boolean onlyAllowNumbers() {
+        return this.onlyAllowNumbers;
+    }
+
+    private String format(String input) {
         StringBuilder builder = new StringBuilder();
         for (char c : input.toCharArray()) {
-            if (Character.isDigit(c)) {
+            if (Character.isDigit(c) || !onlyAllowNumbers) {
                 builder.append(c);
             }
         }
@@ -698,7 +717,7 @@ public class TextBox extends Gui {
     }
 
     public void pressToggle() {
-        if (!AutoGG.isOn) {
+        if (!AutoGG.getInstance().isOn()) {
             this.isEnabled = false;
             setFocused(false);
         } else {

@@ -2,7 +2,6 @@ package me.boomboompower.autogg.utils;
 
 import java.util.regex.Pattern;
 
-
 public enum ChatColor {
     
     BLACK('0'),
@@ -71,18 +70,13 @@ public enum ChatColor {
     }
 
     public static String translateAlternateColorCodes(String textToTranslate) {
-        return translateAlternateColorCodes('&', textToTranslate);
-    }
-
-    public static String translateAlternateColorCodes(char altColorChar, String textToTranslate) {
         char[] b = textToTranslate.toCharArray();
         for (int i = 0; i < b.length - 1; i++) {
-            if (b[i] == altColorChar && "0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(b[i+1]) > -1) {
+            if (b[i] == '&' && "0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(b[i+1]) > -1) {
                 b[i] = ChatColor.COLOR_CHAR;
                 b[i+1] = Character.toLowerCase(b[i+1]);
             }
         }
         return new String(b);
     }
-
 }

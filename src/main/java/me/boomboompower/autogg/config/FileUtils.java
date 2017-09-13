@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2016 boomboompower
+ *     Copyright (C) 2017 boomboompower
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -14,14 +14,12 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package me.boomboompower.autogg.config;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import me.boomboompower.autogg.AutoGG;
-import me.boomboompower.autogg.events.AutoGGEvents;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -38,14 +36,13 @@ public class FileUtils {
     }
 
     public boolean configExists() {
-        return exists(configFile.getPath());
+        return exists(this.configFile.getPath());
     }
 
     public void loadConfig() {
         if (configExists()) {
-            System.out.println("Config file exists! Reading...");
             try {
-                FileReader reader = new FileReader(configFile);
+                FileReader reader = new FileReader(this.configFile);
                 BufferedReader bufferedReader = new BufferedReader(reader);
                 StringBuilder builder = new StringBuilder();
 
@@ -55,13 +52,12 @@ public class FileUtils {
                 }
                 String complete = builder.toString();
 
-                config = new JsonParser().parse(complete).getAsJsonObject();
+                this.config = new JsonParser().parse(complete).getAsJsonObject();
             } catch (Exception ex) {
-                System.out.println("Could not write config! Saving...");
                 saveConfig();
             }
-            AutoGG.isOn = config.has("enabled") && config.get("enabled").getAsBoolean();
-            AutoGGEvents.delay = config.has("delay") ? config.get("delay").getAsInt() : 20;
+            AutoGG.getInstance().setOn(this.config.has("enabled") && this.config.get("enabled").getAsBoolean());
+            AutoGG.getInstance().setTickDelay(this.config.has("delay") ? this.config.get("delay").getAsInt() : 20);
         } else {
             System.out.println("Config does not exist! Saving...");
             saveConfig();
@@ -74,8 +70,8 @@ public class FileUtils {
             configFile.createNewFile();
             FileWriter writer = new FileWriter(configFile);
             BufferedWriter bufferedWriter = new BufferedWriter(writer);
-            config.addProperty("enabled", AutoGG.isOn);
-            config.addProperty("delay", AutoGGEvents.delay);
+            config.addProperty("enabled", AutoGG.getInstance().isOn());
+            config.addProperty("delay", AutoGG.getInstance().getTickDelay());
 
             bufferedWriter.write(config.toString());
             bufferedWriter.close();

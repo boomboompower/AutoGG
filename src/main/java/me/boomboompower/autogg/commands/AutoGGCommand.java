@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2016 boomboompower
+ *     Copyright (C) 2017 boomboompower
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package me.boomboompower.autogg.commands;
 
 import me.boomboompower.autogg.gui.SettingsGui;
@@ -42,14 +41,14 @@ public class AutoGGCommand implements ICommand {
 
     @Override
     public List<String> getCommandAliases() {
-        return Arrays.asList("gg", "goodgame");
+        return Arrays.asList("gg", "autogg");
     }
 
     @Override
     public void processCommand(ICommandSender sender, String[] args) throws CommandException {
         if (args.length == 0) {
             new SettingsGui().display();
-        } else if (args[0] != null) {
+        } else {
             new SettingsGui(args[0]).display();
         }
     }
