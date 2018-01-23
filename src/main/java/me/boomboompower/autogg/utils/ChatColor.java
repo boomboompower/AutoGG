@@ -45,20 +45,20 @@ public enum ChatColor {
     }
 
     public char getChar() {
-        return code;
+        return this.code;
     }
 
     @Override
     public String toString() {
-        return toString;
+        return this.toString;
     }
 
     public boolean isFormat() {
-        return isFormat;
+        return this.isFormat;
     }
 
     public boolean isColor() {
-        return !isFormat && this != RESET;
+        return !this.isFormat && this != RESET;
     }
 
     public static String stripColor(final String input) {

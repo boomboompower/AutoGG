@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2017 boomboompower
+ *     Copyright (C) 2018 boomboompower
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -31,12 +31,30 @@ import java.util.regex.Pattern;
 
 public class AutoGGEvents {
 
-    private Pattern chatPattern = Pattern.compile(
-            "(?<rank>\\[.+] )?(?<player>\\S{1,16}): (?<message>.*)");
+    private Pattern chatPattern = Pattern.compile("(?<rank>\\.get(.+) )?(?<player>\\S{1,16}): (?<message>.*)");
+    private Pattern teamPattern = Pattern.compile("\\.get(TEAM) (?<rank>\\.get(.+) )?(?<player>\\S{1,16}): (?<message>.*)");
+    private Pattern guildPattern = Pattern.compile("Guild > (?<rank>\\.get(.+) )?(?<player>\\S{1,16}): (?<message>.*)");
+    private Pattern partyPattern = Pattern.compile("Party > (?<rank>\\.get(.+) )?(?<player>\\S{1,16}): (?<message>.*)");
+    private Pattern shoutPattern = Pattern.compile("\\.get(SHOUT) (?<rank>\\.get(.+) )?(?<player>\\S{1,16}): (?<message>.*)");
+    private Pattern spectatorPattern = Pattern.compile("\\.get(SPECTATOR) (?<rank>\\.get(.+) )?(?<player>\\S{1,16}): (?<message>.*)");
 
     private final List<String> endingStrings = Arrays.asList(
-            "Winner - ", "1st Place - ", "1st Killer - ", "Winner: ", "WINNER!",
-            "Winning Team - ", "1st - ", "Winners: ", "Winning Team: ", " won the game!", "1st Place: ");
+            "1st Killer - ",
+            "1st Place - ",
+            "Winner: ",
+            " - Damage Dealt - ",
+            "Winning Team - ",
+            "1st - ",
+            "Winners: ",
+            "Winner: ",
+            "Winning Team: ",
+            " won the game!",
+            "Top Seeker: ",
+            "1st Place: ",
+            "Last team standing!",
+            "Winner #1 (",
+            "Top Survivors",
+            "Winners - ");
 
     private int tick = -1;
 
@@ -45,7 +63,7 @@ public class AutoGGEvents {
         try {
             String message = ChatColor.stripColor(event.message.getUnformattedText());
 
-            if (!AutoGG.getInstance().isOn() || this.chatPattern.matcher(message).find()) {
+            if (!AutoGG.getInstance().isOn() || isNormalMessage(message)) {
                 return;
             }
 
@@ -70,7 +88,16 @@ public class AutoGGEvents {
         }
     }
 
+    private boolean isNormalMessage(String message) {
+        return this.chatPattern.matcher(message).matches() ||
+                this.teamPattern.matcher(message).matches() ||
+                this.guildPattern.matcher(message).matches() ||
+                this.partyPattern.matcher(message).matches() ||
+                this.shoutPattern.matcher(message).matches() ||
+                this.spectatorPattern.matcher(message).matches();
+    }
+
     private boolean isEndOfGame(String message) {
-        return this.endingStrings.stream().anyMatch(a -> ChatColor.stripColor(message).contains(a) && message.startsWith(" "));
+        return this.endingStrings.stream().anyMatch(message::contains);
     }
 }

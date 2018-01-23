@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2017 boomboompower
+ *     Copyright (C) 2018 boomboompower
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -14,6 +14,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package me.boomboompower.autogg.gui.modern;
 
 import net.minecraft.client.Minecraft;
@@ -28,22 +29,34 @@ import java.awt.*;
 
 public class ModernButton extends GuiButton {
 
-    public int id;
-    public int width;
-    public int height;
-    public int xPosition;
-    public int yPosition;
-    public boolean enabled;
-    public boolean visible;
-    public boolean hovered;
-    public String displayString;
+    private int id;
+    private int width;
+    private int height;
+    private int xPosition;
+    private int yPosition;
+    private boolean isNew;
+    private boolean enabled;
+    private boolean visible;
+    private boolean hovered;
+    private String buttonIdName;
+    private String displayString;
 
-    public ModernButton(int buttonId, int x, int y, String buttonText)
-    {
-        this(buttonId, x, y, 200, 20, buttonText);
+    private Color enabledOverrideColor = null;
+    private Color disabledOverrideColor = null;
+
+    public ModernButton(int buttonId, int x, int y, String buttonText) {
+        this(buttonId, "", x, y, 200, 20, buttonText);
+    }
+
+    public ModernButton(int buttonId, String idName, int x, int y, String buttonText) {
+        this(buttonId, idName, x, y, 200, 20, buttonText);
     }
 
     public ModernButton(int buttonId, int x, int y, int widthIn, int heightIn, String buttonText) {
+        this(buttonId, "", x, y, widthIn, heightIn, buttonText);
+    }
+
+    public ModernButton(int buttonId, String idName, int x, int y, int widthIn, int heightIn, String buttonText) {
         super(buttonId, x, y, widthIn, heightIn, buttonText);
         this.width = 200;
         this.height = 20;
@@ -54,10 +67,14 @@ public class ModernButton extends GuiButton {
         this.yPosition = y;
         this.width = widthIn;
         this.height = heightIn;
+        this.buttonIdName = idName;
         this.displayString = buttonText;
     }
 
-    @Override
+    /**
+     * Returns 0 if the button is disabled, 1 if the mouse is NOT hovering over this button and 2 if it IS hovering over
+     * this button.
+     */
     protected int getHoverState(boolean mouseOver) {
         int i = 1;
 
@@ -69,7 +86,9 @@ public class ModernButton extends GuiButton {
         return i;
     }
 
-    @Override
+    /**
+     * Draws this button to the screen.
+     */
     public void drawButton(Minecraft mc, int mouseX, int mouseY) {
         if (this.visible) {
             FontRenderer fontrenderer = mc.fontRendererObj;
@@ -78,9 +97,9 @@ public class ModernButton extends GuiButton {
             int i = this.getHoverState(this.hovered);
 
             if (this.enabled) {
-                drawRect(this.xPosition, this.yPosition, this.xPosition + width, this.yPosition + height, new Color(255, 255, 255, 75).getRGB());
+                drawRect(this.xPosition, this.yPosition, this.xPosition + this.width, this.yPosition + height, getEnabledColor().getRGB());
             } else {
-                drawRect(this.xPosition, this.yPosition, this.xPosition + width, this.yPosition + height,  new Color(100, 100, 100, 75).getRGB());
+                drawRect(this.xPosition, this.yPosition, this.xPosition + this.width, this.yPosition + height, getDisabledColor().getRGB());
             }
 
             this.mouseDragged(mc, mouseX, mouseY);
@@ -101,14 +120,13 @@ public class ModernButton extends GuiButton {
     }
 
     @Override
-    public boolean isMouseOver()
-    {
+    public boolean isMouseOver() {
         return this.hovered;
     }
 
     @Override
     public void playPressSound(SoundHandler soundHandlerIn) {
-        soundHandlerIn.playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+        soundHandlerIn.playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 2.0F));
     }
 
     @Override
@@ -121,5 +139,51 @@ public class ModernButton extends GuiButton {
     public void setWidth(int width)
     {
         this.width = width;
+    }
+
+    public Color getEnabledColor() {
+        return this.enabledOverrideColor == null ? new Color(255, 255, 255, 75) : this.enabledOverrideColor;
+    }
+
+    public ModernButton setEnabledColor(Color colorIn) {
+        this.enabledOverrideColor = colorIn;
+
+        return this;
+    }
+
+    public Color getDisabledColor() {
+        return this.disabledOverrideColor == null ? new Color(100, 100, 100, 75) : this.disabledOverrideColor;
+    }
+
+    public ModernButton setDisabledColor(Color colorIn) {
+        this.disabledOverrideColor = colorIn;
+
+        return this;
+    }
+
+    public String getButtonId() {
+        return this.buttonIdName;
+    }
+
+    public String getText() {
+        return this.displayString;
+    }
+
+    public void setText(String text) {
+        this.displayString = text != null ? text : "";
+    }
+
+    public boolean isEnabled() {
+        return this.enabled;
+    }
+
+    public ModernButton setEnabled(boolean isEnabled) {
+        this.enabled = isEnabled;
+
+        return this;
+    }
+
+    public int getId() {
+        return this.id;
     }
 }

@@ -1,10 +1,25 @@
+/*
+ *     Copyright (C) 2018 boomboompower
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package me.boomboompower.autogg.gui.modern;
 
-import me.boomboompower.autogg.AutoGG;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiPageButtonList;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
@@ -16,57 +31,64 @@ import net.minecraft.util.MathHelper;
 import java.awt.*;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.function.Predicate;
 
 public class ModernTextBox extends Gui {
 
     private String alertMessage = "";
 
-    private final int id;
     private final FontRenderer fontRendererInstance;
     public int xPosition;
     public int yPosition;
+
     /** The width of this text field. */
     public int width;
     public int height;
+
     /** Has the current text being edited on the textbox. */
     private String text = "";
+
     private int maxStringLength = 16;
     private int cursorCounter;
-    private boolean enableBackgroundDrawing = true;
+
     /** if true the textbox can lose focus by clicking elsewhere on the screen */
     private boolean canLoseFocus = true;
+
     /** If this value is true along with isEnabled, keyTyped will process the keys. */
     private boolean isFocused = false;
+
     /** If this value is true along with isFocused, keyTyped will process the keys. */
     private boolean isEnabled = true;
+
     /** The current character index that should be used as start of the rendered text. */
     private int lineScrollOffset;
+
     private int cursorPosition;
     /** other selection position, maybe the same as the cursor */
+
     private int selectionEnd;
-    private int enabledColor = 14737632;
-    private int disabledColor = 7368816;
+
     /** True if this textbox is visible */
     private boolean visible = true;
-    private GuiPageButtonList.GuiResponder guiResponder;
-    private Predicate<String> validator = s -> true;
 
     private boolean onlyAllowNumbers = false;
     private String noTextMessage = "Write here!";
 
     private boolean running = false;
+    private boolean forceOldTheme = false;
 
-    public ModernTextBox(int componentId, int x, int y, int width, int height) {
-        this(componentId, x, y, width, height, false);
+    public ModernTextBox(int x, int y) {
+        this(x, y, 150, 20, false);
     }
 
-    public ModernTextBox(int componentId, int x, int y, int width, int height, boolean onlyAllowNumbers) {
-        this(componentId, x, y, width, height, "Write Here!", onlyAllowNumbers);
+    public ModernTextBox(int x, int y, int width, int height) {
+        this(x, y, width, height, false);
     }
 
-    public ModernTextBox(int componentId, int x, int y, int width, int height, String noTextMessage, boolean onlyAllowNumbers) {
-        this.id = componentId;
+    public ModernTextBox(int x, int y, int width, int height, boolean onlyAllowNumbers) {
+        this(x, y, width, height, "Write Here!", onlyAllowNumbers);
+    }
+
+    public ModernTextBox(int x, int y, int width, int height, String noTextMessage, boolean onlyAllowNumbers) {
         this.fontRendererInstance = Minecraft.getMinecraft().fontRendererObj;
         this.xPosition = x;
         this.yPosition = y;
@@ -74,10 +96,6 @@ public class ModernTextBox extends Gui {
         this.height = height;
         this.noTextMessage = noTextMessage;
         this.onlyAllowNumbers = onlyAllowNumbers;
-    }
-
-    public void setGuiResponder(GuiPageButtonList.GuiResponder guiResponder) {
-        this.guiResponder = guiResponder;
     }
 
     /**
@@ -91,14 +109,18 @@ public class ModernTextBox extends Gui {
      * Sets the text of the textbox
      */
     public void setText(String text) {
-        if (this.validator.test(format(text))) {
-            if (format(text).length() > this.maxStringLength) {
-                this.text = format(text).substring(0, this.maxStringLength);
-            } else {
-                this.text = format(text);
-            }
-            this.setCursorPositionEnd();
+        if (format(text).length() > this.maxStringLength) {
+            this.text = format(text).substring(0, this.maxStringLength);
+        } else {
+            this.text = format(text);
         }
+        this.setCursorPositionEnd();
+    }
+
+    public ModernTextBox returnWithSetText(String text) {
+        this.setText(text);
+
+        return this;
     }
 
     /**
@@ -115,10 +137,6 @@ public class ModernTextBox extends Gui {
         int i = this.cursorPosition < this.selectionEnd ? this.cursorPosition: this.selectionEnd;
         int j = this.cursorPosition < this.selectionEnd ? this.selectionEnd: this.cursorPosition;
         return this.text.substring(i, j);
-    }
-
-    public void setValidator(Predicate < String > theValidator) {
-        this.validator = theValidator;
     }
 
     /**
@@ -148,14 +166,8 @@ public class ModernTextBox extends Gui {
             s = s + this.text.substring(j);
         }
 
-        if (this.validator.test(s)) {
-            this.text = s;
-            this.moveCursorBy(i - this.selectionEnd + l);
-
-            if (this.guiResponder != null) {
-                this.guiResponder.func_175319_a(this.id, this.text);
-            }
-        }
+        this.text = s;
+        this.moveCursorBy(i - this.selectionEnd + l);
     }
 
     /**
@@ -193,23 +205,13 @@ public class ModernTextBox extends Gui {
                     s = s + this.text.substring(j);
                 }
 
-                if (this.validator.test(s)) {
-                    this.text = s;
+                this.text = s;
 
-                    if (flag) {
-                        this.moveCursorBy(num);
-                    }
-
-                    if (this.guiResponder != null) {
-                        this.guiResponder.func_175319_a(this.id, this.text);
-                    }
+                if (flag) {
+                    this.moveCursorBy(num);
                 }
             }
         }
-    }
-
-    public int getId() {
-        return this.id;
     }
 
     /**
@@ -291,113 +293,107 @@ public class ModernTextBox extends Gui {
     /**
      * Call this method from your GuiScreen to process the keys into the textbox
      */
-    public boolean textboxKeyTyped(char c, int keyCode) {
-        if (!this.isFocused) {
-            return false;
-        } else if (GuiScreen.isKeyComboCtrlA(keyCode)) {
-            this.setCursorPositionEnd();
-            this.setSelectionPos(0);
-            return true;
-        } else if (GuiScreen.isKeyComboCtrlC(keyCode)) {
-            GuiScreen.setClipboardString(this.getSelectedText());
-            return true;
-        } else if (GuiScreen.isKeyComboCtrlV(keyCode)) {
-            if (this.isEnabled) {
-                this.writeText(format(GuiScreen.getClipboardString()));
-            }
-            return true;
-        } else if (GuiScreen.isKeyComboCtrlX(keyCode)) {
-            GuiScreen.setClipboardString(this.getSelectedText());
+    public void textboxKeyTyped(char c, int keyCode) {
+        if (this.isFocused && !this.running) {
+            if (GuiScreen.isKeyComboCtrlA(keyCode)) {
+                this.setCursorPositionEnd();
+                this.setSelectionPos(0);
+            } else if (GuiScreen.isKeyComboCtrlC(keyCode)) {
+                GuiScreen.setClipboardString(this.getSelectedText());
+            } else if (GuiScreen.isKeyComboCtrlV(keyCode)) {
+                if (this.isEnabled) {
+                    this.writeText(format(GuiScreen.getClipboardString()));
+                }
 
-            if (this.isEnabled) {
-                this.writeText("");
-            }
-            return true;
-        } else {
-            switch (keyCode) {
-                case 14:
-                    if (GuiScreen.isCtrlKeyDown()) {
-                        if (this.isEnabled) {
-                            this.deleteWords( -1);
-                        }
-                    }
-                    else if (this.isEnabled) {
-                        this.deleteFromCursor( -1);
-                    }
+            } else if (GuiScreen.isKeyComboCtrlX(keyCode)) {
+                GuiScreen.setClipboardString(this.getSelectedText());
 
-                    return true;
-                case 199:
-                    if (GuiScreen.isShiftKeyDown()) {
-                        this.setSelectionPos(0);
-                    } else {
-                        this.setCursorPositionZero();
-                    }
-                    return true;
-                case 203:
-                    if (GuiScreen.isShiftKeyDown()) {
+                if (this.isEnabled) {
+                    this.writeText("");
+                }
+            } else {
+                switch (keyCode) {
+                    case 14:
                         if (GuiScreen.isCtrlKeyDown()) {
-                            this.setSelectionPos(this.getNthWordFromPos( -1, this.getSelectionEnd()));
+                            if (this.isEnabled) {
+                                this.deleteWords( -1);
+                            }
+                        }
+                        else if (this.isEnabled) {
+                            this.deleteFromCursor( -1);
+                        }
+
+                        return;
+                    case 199:
+                        if (GuiScreen.isShiftKeyDown()) {
+                            this.setSelectionPos(0);
+                        } else {
+                            this.setCursorPositionZero();
+                        }
+                        return;
+                    case 203:
+                        if (GuiScreen.isShiftKeyDown()) {
+                            if (GuiScreen.isCtrlKeyDown()) {
+                                this.setSelectionPos(this.getNthWordFromPos( -1, this.getSelectionEnd()));
+                            }
+                            else {
+                                this.setSelectionPos(this.getSelectionEnd() -1);
+                            }
+                        }
+                        else if (GuiScreen.isCtrlKeyDown()) {
+                            this.setCursorPosition(this.getNthWordFromCursor( -1));
                         }
                         else {
-                            this.setSelectionPos(this.getSelectionEnd() -1);
+                            this.moveCursorBy( -1);
                         }
-                    }
-                    else if (GuiScreen.isCtrlKeyDown()) {
-                        this.setCursorPosition(this.getNthWordFromCursor( -1));
-                    }
-                    else {
-                        this.moveCursorBy( -1);
-                    }
 
-                    return true;
-                case 205:
-                    if (GuiScreen.isShiftKeyDown()) {
-                        if (GuiScreen.isCtrlKeyDown()) {
-                            this.setSelectionPos(this.getNthWordFromPos(1, this.getSelectionEnd()));
+                        return;
+                    case 205:
+                        if (GuiScreen.isShiftKeyDown()) {
+                            if (GuiScreen.isCtrlKeyDown()) {
+                                this.setSelectionPos(this.getNthWordFromPos(1, this.getSelectionEnd()));
+                            } else {
+                                this.setSelectionPos(this.getSelectionEnd() + 1);
+                            }
+                        } else if (GuiScreen.isCtrlKeyDown()) {
+                            this.setCursorPosition(this.getNthWordFromCursor(1));
                         } else {
-                            this.setSelectionPos(this.getSelectionEnd() + 1);
+                            this.moveCursorBy(1);
                         }
-                    } else if (GuiScreen.isCtrlKeyDown()) {
-                        this.setCursorPosition(this.getNthWordFromCursor(1));
-                    } else {
-                        this.moveCursorBy(1);
-                    }
-                    return true;
-                case 207:
-                    if (GuiScreen.isShiftKeyDown()) {
-                        this.setSelectionPos(this.text.length());
-                    } else {
-                        this.setCursorPositionEnd();
-                    }
-                    return true;
-                case 211:
-                    if (GuiScreen.isCtrlKeyDown()) {
-                        if (this.isEnabled) {
-                            this.deleteWords(1);
+                        return;
+                    case 207:
+                        if (GuiScreen.isShiftKeyDown()) {
+                            this.setSelectionPos(this.text.length());
+                        } else {
+                            this.setCursorPositionEnd();
                         }
-                    } else if (this.isEnabled) {
-                        this.deleteFromCursor(1);
-                    }
-                    return true;
-                default:
-                    if (ChatAllowedCharacters.isAllowedCharacter(c)) {
-                        if (this.onlyAllowNumbers) {
-                            if (Character.isDigit(c)) {
+                        return;
+                    case 211:
+                        if (GuiScreen.isCtrlKeyDown()) {
+                            if (this.isEnabled) {
+                                this.deleteWords(1);
+                            }
+                        } else if (this.isEnabled) {
+                            this.deleteFromCursor(1);
+                        }
+                        return;
+                    default:
+                        if (ChatAllowedCharacters.isAllowedCharacter(c)) {
+                            if (this.onlyAllowNumbers) {
+                                if (Character.isDigit(c)) {
+                                    if (this.isEnabled) {
+                                        this.writeText(Character.toString(c));
+                                    }
+                                } else if (!running) {
+                                    alert("Only numbers can be used!", 1250);
+                                }
+                            } else {
                                 if (this.isEnabled) {
                                     this.writeText(Character.toString(c));
                                 }
-                            } else if (!this.running) {
-                                alert("Only numbers can be used!", 1250);
-                            }
-                        } else {
-                            if (this.isEnabled) {
-                                this.writeText(Character.toString(c));
                             }
                         }
-                        return true;
-                    } else {
-                        return false;
-                    }
+                }
             }
         }
     }
@@ -415,10 +411,6 @@ public class ModernTextBox extends Gui {
         if (this.isFocused && flag && buttonClicked == 0) {
             int i = x - this.xPosition;
 
-            if (this.enableBackgroundDrawing) {
-                i -= 4;
-            }
-
             String s = this.fontRendererInstance.trimStringToWidth(this.text.substring(this.lineScrollOffset), this.getWidth());
             this.setCursorPosition(this.fontRendererInstance.trimStringToWidth(s, i).length() + this.lineScrollOffset);
         }
@@ -429,7 +421,11 @@ public class ModernTextBox extends Gui {
      */
     public void drawTextBox() {
         if (this.getVisible()) {
-            if (this.getEnableBackgroundDrawing()) {
+
+            if (this.forceOldTheme) {
+                drawRect(this.xPosition - 1, this.yPosition - 1, this.xPosition + this.width + 1, this.yPosition + this.height + 1, -6250336);
+                drawRect(this.xPosition, this.yPosition, this.xPosition + this.width, this.yPosition + this.height, -16777216);
+            } else {
                 if (this.isEnabled) {
                     drawRect(this.xPosition, this.yPosition, this.xPosition + width, this.yPosition + height, new Color(0, 148, 255, 75).getRGB());
                 } else {
@@ -437,14 +433,14 @@ public class ModernTextBox extends Gui {
                 }
             }
 
-            int i = this.isEnabled ? this.enabledColor : this.disabledColor;
+            int i = this.isEnabled ? 14737632 : 7368816;
             int j = this.cursorPosition - this.lineScrollOffset;
             int k = this.selectionEnd - this.lineScrollOffset;
             String s = this.fontRendererInstance.trimStringToWidth(this.text.substring(this.lineScrollOffset), this.getWidth());
             boolean flag = j >= 0 && j <= s.length();
             boolean flag1 = this.isFocused && this.cursorCounter / 6 % 2 == 0 && flag;
-            int l = this.enableBackgroundDrawing ? this.xPosition + 4 : this.xPosition;
-            int i1 = this.enableBackgroundDrawing ? this.yPosition + (this.height - 8) / 2 : this.yPosition;
+            int l = this.xPosition + 4;
+            int i1 = this.yPosition + (this.height - 8) / 2;
             int j1 = l;
 
             if (k > s.length()) {
@@ -452,7 +448,7 @@ public class ModernTextBox extends Gui {
             }
 
             if (!alertMessage.isEmpty()) {
-                this.fontRendererInstance.drawString(alertMessage, ((this.xPosition + this.width / 2) - fontRendererInstance.getStringWidth(alertMessage) / 2), this.yPosition + this.height / 2 - 4, enabledColor, false);
+                this.fontRendererInstance.drawString(alertMessage, ((this.xPosition + this.width / 2) - fontRendererInstance.getStringWidth(alertMessage) / 2), this.yPosition + this.height / 2 - 4, 14737632, false);
                 return;
             }
 
@@ -482,8 +478,7 @@ public class ModernTextBox extends Gui {
             if (flag1) {
                 if (flag2) {
                     Gui.drawRect(k1, i1 -1, k1 + 1, i1 + 1 + this.fontRendererInstance.FONT_HEIGHT, -3092272);
-                }
-                else {
+                } else {
                     this.fontRendererInstance.drawString("_", (float) k1, (float) i1, i, false);
                 }
             }
@@ -558,31 +553,6 @@ public class ModernTextBox extends Gui {
     }
 
     /**
-     * get enable drawing background and outline
-     */
-    public boolean getEnableBackgroundDrawing() {
-        return this.enableBackgroundDrawing;
-    }
-
-    /**
-     * enable drawing background and outline
-     */
-    public void setEnableBackgroundDrawing(boolean enableBackgroundDrawing) {
-        this.enableBackgroundDrawing = enableBackgroundDrawing;
-    }
-
-    /**
-     * Sets the text colour for this textbox (disabled text will not use this colour)
-     */
-    public void setTextColor(int color) {
-        this.enabledColor = color;
-    }
-
-    public void setDisabledTextColour(int color) {
-        this.disabledColor = color;
-    }
-
-    /**
      * Sets focus to this gui element
      */
     public void setFocused(boolean isFocused) {
@@ -618,7 +588,7 @@ public class ModernTextBox extends Gui {
      * returns the width of the textbox depending on if background drawing is enabled
      */
     public int getWidth() {
-        return this.getEnableBackgroundDrawing() ? this.width - 8 : this.width;
+        return this.width - 8;
     }
 
     /**
@@ -702,6 +672,12 @@ public class ModernTextBox extends Gui {
         this.onlyAllowNumbers = onlyAllowNumbers;
     }
 
+    public ModernTextBox returnWithOnlyAllowNumbersSet(boolean onlyAllowNumbers) {
+        this.setOnlyAllowNumbers(onlyAllowNumbers);
+
+        return this;
+    }
+
     public boolean onlyAllowNumbers() {
         return this.onlyAllowNumbers;
     }
@@ -709,19 +685,14 @@ public class ModernTextBox extends Gui {
     private String format(String input) {
         StringBuilder builder = new StringBuilder();
         for (char c : input.toCharArray()) {
-            if (Character.isDigit(c) || !onlyAllowNumbers) {
+            if (Character.isLetterOrDigit(c) || c == '_') {
                 builder.append(c);
             }
         }
-        return builder.toString();
+        return builder.toString().trim();
     }
 
-    public void pressToggle() {
-        if (!AutoGG.getInstance().isOn()) {
-            this.isEnabled = false;
-            setFocused(false);
-        } else {
-            this.isEnabled = true;
-        }
+    public void setForceOldTheme(boolean forceOldTheme) {
+        this.forceOldTheme = forceOldTheme;
     }
 }

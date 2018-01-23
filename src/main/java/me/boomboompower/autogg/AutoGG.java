@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2017 boomboompower
+ *     Copyright (C) 2018 boomboompower
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -27,11 +27,11 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
-@Mod(modid = AutoGG.MODID, version = AutoGG.VERSION, acceptedMinecraftVersions="*")
+@Mod(modid = AutoGG.MODID, version = AutoGG.VERSION, acceptedMinecraftVersions="[1.8.9]")
 public class AutoGG {
 
     public static final String MODID = "autogg";
-    public static final String VERSION = "3.0";
+    public static final String VERSION = "3.1";
 
     @Mod.Instance
     private static AutoGG instance;
@@ -48,12 +48,10 @@ public class AutoGG {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
-        Minecraft.getMinecraft().addScheduledTask(() -> {
-            this.fileUtils.loadConfig();
+        this.fileUtils.loadConfig();
 
-            ClientCommandHandler.instance.registerCommand(new AutoGGCommand());
-            MinecraftForge.EVENT_BUS.register(new AutoGGEvents());
-        });
+        ClientCommandHandler.instance.registerCommand(new AutoGGCommand());
+        MinecraftForge.EVENT_BUS.register(new AutoGGEvents());
     }
 
     public FileUtils getFileUtils() {
