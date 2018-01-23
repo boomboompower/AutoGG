@@ -60,9 +60,17 @@ public class AutoGGEvents {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onGameEndEvent(ClientChatReceivedEvent event) {
-        try {
-            String message = ChatColor.stripColor(event.message.getUnformattedText());
+        if (event.isCanceled()) {
+            return;
+        }
 
+        String message = ChatColor.stripColor(event.message.getUnformattedText());
+
+        if (message.isEmpty()) {
+            return;
+        }
+
+        try {
             if (!AutoGG.getInstance().isOn() || isNormalMessage(message)) {
                 return;
             }
